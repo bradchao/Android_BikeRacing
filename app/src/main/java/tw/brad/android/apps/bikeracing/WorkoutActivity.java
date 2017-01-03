@@ -7,7 +7,9 @@ import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.WindowManager;
+import android.widget.MediaController;
 import android.widget.TextView;
+import android.widget.VideoView;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -41,6 +43,8 @@ public class WorkoutActivity extends AppCompatActivity {
     private String strRacingInfo;
     private TextView textGameInfo;
 
+    private VideoView videoView;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,7 +63,9 @@ public class WorkoutActivity extends AppCompatActivity {
         textClock = (TextView)findViewById(R.id.clock);
         textSpeed = (TextView)findViewById(R.id.speed);
         textDistance = (TextView)findViewById(R.id.distance);
-        textGameInfo = (TextView)findViewById(R.id.gameInfo);
+        textGameInfo = (TextView)findViewById(R.id.racingInfo);
+
+        videoView = (VideoView)findViewById(R.id.video);
 
         uiHandler = new UIHandler();
 
@@ -72,10 +78,21 @@ public class WorkoutActivity extends AppCompatActivity {
         room_id = it.getStringExtra("room_id");
         my_id = it.getStringExtra("my_id");
         if (room_id != null){
-            Log.v("brad", room_id + ":" + my_id);
             isRacing = true;
             timer.schedule(new RacingTask(),0, 1000);
         }
+        playLocalVideo();
+    }
+
+    public void playLocalVideo() {
+        MediaController mediaController = new MediaController(this);
+        mediaController.setAnchorView(videoView);
+        videoView.setMediaController(mediaController);
+        videoView.setKeepScreenOn(true);
+        videoView.setVideoPath("android.resource://" + getPackageName() + "/" + R.raw.videoplayback);
+        videoView.start();
+        videoView.requestFocus();
+        videoView.seekTo(12*1000);
     }
 
     private class ClockTask extends TimerTask {
@@ -164,6 +181,7 @@ public class WorkoutActivity extends AppCompatActivity {
         textDistance.setText(String.format("%4.2f",workoutDistance));
     }
     private void updateGameInfo(){
+        Log.v("brad", "info: " + strRacingInfo);
         textGameInfo.setText(strRacingInfo);
     }
 
