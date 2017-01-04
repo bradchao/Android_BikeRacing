@@ -6,6 +6,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.View;
 import android.view.WindowManager;
 import android.widget.MediaController;
 import android.widget.TextView;
@@ -27,7 +28,7 @@ import java.util.TimerTask;
 public class WorkoutActivity extends AppCompatActivity {
     private Timer timer;
     private int workoutTimer;
-    private int workoutRPM;
+    private double workoutRPM;
     private double workoutSpeed;    // km/h
     private double workoutDistance; // km
 
@@ -44,6 +45,8 @@ public class WorkoutActivity extends AppCompatActivity {
     private TextView textGameInfo;
 
     private VideoView videoView;
+    private View view;
+    private long lastClickTime;
 
 
     @Override
@@ -60,6 +63,7 @@ public class WorkoutActivity extends AppCompatActivity {
     }
 
     private void init(){
+        view = findViewById(R.id.activity_workout);
         textClock = (TextView)findViewById(R.id.clock);
         textSpeed = (TextView)findViewById(R.id.speed);
         textDistance = (TextView)findViewById(R.id.distance);
@@ -72,7 +76,7 @@ public class WorkoutActivity extends AppCompatActivity {
         timer = new Timer();
         workoutTimer = 0;
         timer.schedule(new ClockTask(),1000, 1000);
-        workoutRPM = 90;
+        workoutRPM = 0;
 
         Intent it = getIntent();
         room_id = it.getStringExtra("room_id");
@@ -82,17 +86,32 @@ public class WorkoutActivity extends AppCompatActivity {
             timer.schedule(new RacingTask(),0, 1000);
         }
         playLocalVideo();
+
+        lastClickTime = System.currentTimeMillis();
+        view.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                long now = System.currentTimeMillis();
+                long dt = now - lastClickTime;
+                lastClickTime = now;
+                workoutRPM = 60f / (dt / 1000f);
+                Log.v("brad", "rpm:" + workoutRPM);
+            }
+        });
     }
+
 
     public void playLocalVideo() {
         MediaController mediaController = new MediaController(this);
         mediaController.setAnchorView(videoView);
         videoView.setMediaController(mediaController);
         videoView.setKeepScreenOn(true);
+        videoView.setClickable(false);
+        videoView.setMediaController(null);
         videoView.setVideoPath("android.resource://" + getPackageName() + "/" + R.raw.videoplayback);
+        videoView.seekTo(12*1000);
         videoView.start();
         videoView.requestFocus();
-        videoView.seekTo(12*1000);
     }
 
     private class ClockTask extends TimerTask {
@@ -132,7 +151,6 @@ public class WorkoutActivity extends AppCompatActivity {
                                         conn.getInputStream()));
                 String ret = br.readLine();
                 parseGameInfo(ret);
-                Log.v("brad", ret);
                 br.close();
             }catch(Exception e){
                 Log.v("brad", "Get Game List:" + e.toString());
@@ -181,7 +199,6 @@ public class WorkoutActivity extends AppCompatActivity {
         textDistance.setText(String.format("%4.2f",workoutDistance));
     }
     private void updateGameInfo(){
-        Log.v("brad", "info: " + strRacingInfo);
         textGameInfo.setText(strRacingInfo);
     }
 
